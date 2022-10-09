@@ -30,3 +30,26 @@ dotnet nuget add source --name ArcFaceNuget C:\Users\olind\Desktop\401_indychko-
 dotnet add package ArcFaceNuget
 ```
 5. В проекте использовать API с помощью `using ArcFaceNuget;`
+
+### Работа тестового приложения `TestNugetPackage`
+После подключения пакета ArcFaceNuget программа вычисляет сходства и различия между двумя тестовыми изображениями. Результат выводится в консоль в виде двух матриц Distance и Similarity:
+```
+Distance Matrix
+0 0,68851733
+0,68851733 0
+
+Similarity matrix
+1 0,76297194
+0,76297194 1
+```
+
+### Предоставляемый метод для работы с изображениями
+```  
+/// <summary>
+/// Method gets N images and calculates distance and similarity between every two images.
+/// </summary>
+/// <returns>
+/// Tuple with 2 matrix of size N x N. First matrix is distance matrix and another is similarity matrix.
+/// </returns>
+Task<(float[,], float[,])> GetDistanceAndSimilarity(Image<Rgb24>[] images, CancellationToken token)
+```
