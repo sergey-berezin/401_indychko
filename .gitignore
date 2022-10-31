@@ -134,3 +134,10 @@ $RECYCLE.BIN/
 .DS_Store
 
 _NCrunch*
+/ArcFaceNuget/arcfaceresnet100-8.onnx
+/.vs/401_indychko/FileContentIndex
+/.vs/ProjectSettings.json
+/.vs/slnx.sqlite
+/.vs/VSWorkspaceState.json
+/TestNugetPackage/.vs/ProjectEvaluation
+/WpfArcFace/WpfArcFace/.vs

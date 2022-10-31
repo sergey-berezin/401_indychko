@@ -1,0 +1,88 @@
+﻿<Window x:Class="WpfArcFace.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WpfArcFace"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition MaxHeight="50"/>
+            <RowDefinition MaxHeight="30"/>
+            <RowDefinition/>
+            <RowDefinition MaxHeight="30"/>
+        </Grid.RowDefinitions>
+        
+        <!--First list with images-->
+        <TextBlock Grid.Row="0" Grid.Column="0" 
+                   HorizontalAlignment="Left" Text="First image" FontWeight="ExtraBold"
+                   VerticalAlignment="Center" FontSize="22" Margin="10,0,0,0"/>
+        <Button Grid.Column="0" Grid.Row="1" Content="&#128193;"
+                HorizontalAlignment="Right"
+                Name="FirstDialogButton"
+                Width="25" Height="25" Background="LavenderBlush"
+                Click="OpenFolderDialog" Margin="0,0,10,0" />
+        <TextBlock Grid.Column="0" Grid.Row="1" MaxWidth="200" HorizontalAlignment="Left" Margin="10,0,0,0">
+            <Run FontWeight="Bold" Text="Folder name:  "/>
+            <Run Name="FirstPathTextBlock"/>
+        </TextBlock>
+        <ListBox Grid.Column="0" Grid.Row="2"
+            Name="FirstImageList" Margin="10,10,10,0"/>
+
+        <!--Second list with images-->
+        <TextBlock Grid.Row="0" Grid.Column="1" 
+                   HorizontalAlignment="Left" Text="Second image" FontWeight="ExtraBold"
+                   VerticalAlignment="Center" FontSize="22" Margin="6,0,0,0"/>
+        <Button Grid.Column="1" Grid.Row="1" Content="&#128193;"
+                HorizontalAlignment="Right"
+                Name="SecondDialogButton"
+                Width="25" Height="25" Background="LavenderBlush"
+                Click="OpenFolderDialog" Margin="0,0,10,0" />
+        <TextBlock Grid.Column="1" Grid.Row="1" MaxWidth="200" HorizontalAlignment="Left" Margin="10,0,0,0">
+            <Run FontWeight="Bold" Text="Folder name:  "/>
+            <Run Name="SecondPathTextBlock"/>
+        </TextBlock>
+        <ListBox Grid.Column="1" Grid.Row="2"
+            Name="SecondImageList" Margin="10,10,10,0"/>
+        
+        <!--ArcFace results-->
+        <TextBlock Grid.Row="0" Grid.Column="2" 
+                   HorizontalAlignment="Left" Text="ArcFace Analysis" FontWeight="ExtraBold"
+                   VerticalAlignment="Center" FontSize="22" Margin="10,0,0,0"/>
+        <Button Grid.Column="2" Grid.Row="1" Content="Analyse images"
+                HorizontalAlignment="Center"
+                Name="AnalyseButton"
+                Width="120" Height="25"
+                Click="AnalyseImages" Background="LavenderBlush" />
+        <StackPanel Grid.Row="2" Grid.Column="2" Margin="10,0,10,0">
+            <TextBlock Text="Progress:" Margin="0,10,0,0"/>
+            <ProgressBar Foreground="PaleVioletRed"
+                     Background="LavenderBlush" Name="ProgressBar" Minimum="0" Maximum="100" 
+                     Height="20" VerticalAlignment="Top" Margin="10,10,10,10"/>
+            <Button HorizontalAlignment="Center"
+                Name="CancellationButton"
+                Width="120" Height="25" Content="Stop claculations"
+                Click="CancelCalculations" Background="PaleVioletRed" />
+            <TextBlock Margin="0,20,0,0">
+                <Run Text="Results:" FontWeight="Bold"/>
+                <LineBreak/><LineBreak/>
+                <Run Text="    Distance:    "/>
+                <Run Name="Distance"/>
+                <LineBreak/><LineBreak/>
+                <Run Text="    Similarity:    "/>
+                <Run Name="Similarity"/>
+            </TextBlock>
+        </StackPanel>
+        <TextBlock Grid.Row="2" Grid.Column="2" VerticalAlignment="Bottom" HorizontalAlignment="Right" Margin="10,10,5,0">
+            <Run FontSize="80" Text="&#128008;" Foreground="PaleVioletRed"/>
+            <LineBreak/>
+            <Run Text="(just a cat to fill extra space)" Foreground="PaleVioletRed"/>
+        </TextBlock>
+    </Grid>
+</Window>

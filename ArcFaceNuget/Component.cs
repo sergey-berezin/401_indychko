@@ -36,7 +36,8 @@ namespace ArcFaceNuget
         /// <returns>
         /// Tuple with 2 matrix of size N x N. First matrix is distance matrix and another is similarity matrix.
         /// </returns>
-        public async Task<(float[,], float[,])> GetDistanceAndSimilarity(Image<Rgb24>[] images, CancellationToken token)
+        public async Task<(float[,], float[,])> GetDistanceAndSimilarity(
+            Image<Rgb24>[] images, CancellationToken token, IProgress<int> progress)
         {
             float[,] distanceMatrix = new float[images.Length, images.Length];
 
@@ -44,12 +45,19 @@ namespace ArcFaceNuget
 
             try
             {
-                CheckToken(token);
-                var tasks = new List<Task<float[]>>();
+                List<float[]> embeddings = new();
 
-                Array.ForEach(images, image => tasks.Add(GetEmbeddings(image, token)));
+                progress.Report(0);
 
-                float[][] embeddings = await Task.WhenAll(tasks);
+                foreach (var image in images)
+                {
+                    // check cancellation token 
+                    CheckToken(token);
+                    // get new embegging
+                    embeddings.Add(await GetEmbeddings(image, token));
+                    // report progress state
+                    progress.Report(embeddings.Count * 100 / images.Count());
+                }
 
                 int i = 0;
 
