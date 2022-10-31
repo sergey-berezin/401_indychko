@@ -58,4 +58,4 @@ Task<(float[,], float[,])> GetDistanceAndSimilarity(Image<Rgb24>[] images, Cance
 ## Вариант 1Б
 
 ### Пример работы приложения
-![WPF example](https://postimg.cc/0bbnLcMn](https://i.postimg.cc/Wb7yqysB/2022-10-31-035232.jpg)
+![WPF example](https://i.postimg.cc/Wb7yqysB/2022-10-31-035232.jpg)
