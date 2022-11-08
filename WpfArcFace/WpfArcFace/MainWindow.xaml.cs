@@ -40,6 +40,20 @@ namespace WpfArcFace
             MainIcon = TaskDialogIcon.Information
         };
 
+        private TaskDialog instructionDialog = new()
+        {
+            Buttons =
+            {
+                new TaskDialogButton("Let's go!")
+            },
+            WindowTitle = "How does this work?",
+            Content = "1. Select folder with your images by clicking on 📁 button\n" +
+                      "2. Select fisrt and secong images to compare\n" +
+                      "3. Press Analyse Images button\n\n" +
+                      "Voilà!🙂",
+            MainIcon = TaskDialogIcon.Information
+        };
+
         private TaskDialog cancellationDialog = new()
         {
             Buttons =
@@ -60,6 +74,12 @@ namespace WpfArcFace
         {
             InitializeComponent();
         }
+
+        public void OpenInstructionDialog(object sender, RoutedEventArgs e)
+        {
+            instructionDialog.Show();
+        }
+
 
         public void OpenFolderDialog(object sender, RoutedEventArgs e)
         {
@@ -93,6 +113,11 @@ namespace WpfArcFace
 
         public async void AnalyseImages(object sender, RoutedEventArgs e)
         {
+            // disable Analyse Button while doing computations
+            AnalyseButton.IsEnabled = false;
+            CancellationButton.IsEnabled = true;
+            ProgressBar.Value = 0;
+
             var firstSelectedItem = (StackPanel)FirstImageList.SelectedItem;
             var secondSelectedItem = (StackPanel)SecondImageList.SelectedItem;
 
@@ -111,11 +136,14 @@ namespace WpfArcFace
             Progress<int> progress = new();
             progress.ProgressChanged += ReportProgress;
 
+            Thread.Sleep(100);
             // using arcFaceNugetPackage
             var results = await arcFaceComponent.GetDistanceAndSimilarity(images, cts.Token, progress);
+            Thread.Sleep(100);
 
             if (cts.Token.IsCancellationRequested)
             {
+                ProgressBar.Value = 0;
                 Similarity.Text = "Not stated";
                 Distance.Text = "Not stated";
             }
@@ -124,6 +152,10 @@ namespace WpfArcFace
                 Similarity.Text = $"{results.Item2[0, 1]}";
                 Distance.Text = results.Item1[0, 1].ToString();
             }
+
+            // enable Analyse Button after computations end
+            AnalyseButton.IsEnabled = true;
+            CancellationButton.IsEnabled = false;
         }
 
         public void CancelCalculations(object sender, RoutedEventArgs e)
@@ -132,9 +164,18 @@ namespace WpfArcFace
             cancellationDialog.Show();
             Similarity.Text = "Not stated";
             Distance.Text = "Not stated";
+            ProgressBar.Value = 0;
         }
 
         #region Private methods
+
+        private void ListSelectionChange(object? sender, SelectionChangedEventArgs e) 
+        {
+            if (FirstImageList.SelectedItems.Count > 0 && SecondImageList.SelectedItems.Count > 0)
+            {
+                AnalyseButton.IsEnabled = true;
+            }
+        }
 
         private void ReportProgress(object? sender, int e)
         {
