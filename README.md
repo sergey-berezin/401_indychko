@@ -53,3 +53,9 @@ Similarity matrix
 /// </returns>
 Task<(float[,], float[,])> GetDistanceAndSimilarity(Image<Rgb24>[] images, CancellationToken token)
 ```
+
+# Лабораторная работа №2 
+## Вариант 1Б
+
+### Пример работы приложения
+![WPF example](https://i.postimg.cc/Wb7yqysB/2022-10-31-035232.jpg)
