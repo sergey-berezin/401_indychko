@@ -34,9 +34,10 @@ namespace ArcFaceNuget
         /// Method gets N images and calculates distance and similarity between every two images.
         /// </summary>
         /// <returns>
-        /// Tuple with 2 matrix of size N x N. First matrix is distance matrix and another is similarity matrix.
+        /// Tuple with 2 matrix of size N x N and list of embeddings. 
+        /// First matrix is distance matrix and another is similarity matrix.
         /// </returns>
-        public async Task<(float[,], float[,])> GetDistanceAndSimilarity(
+        public async Task<(float[,], float[,], List<float[]>)> GetDistanceAndSimilarity(
             Image<Rgb24>[] images, CancellationToken token, IProgress<int> progress)
         {
             float[,] distanceMatrix = new float[images.Length, images.Length];
@@ -73,11 +74,11 @@ namespace ArcFaceNuget
                     i++;
                 }
 
-                return (distanceMatrix, similarityMatrix);
+                return (distanceMatrix, similarityMatrix, embeddings);
             }
             catch
             {
-                return (new float[0,0], new float[0,0]);
+                return (new float[0,0], new float[0,0], new List<float[]>());
             }  
         }
 
@@ -115,9 +116,6 @@ namespace ArcFaceNuget
                 token.ThrowIfCancellationRequested();
         }
 
-        private string MetadataToString(NodeMetadata metadata)
-            => $"{metadata.ElementType}[{String.Join(",", metadata.Dimensions.Select(i => i.ToString()))}]";
-
         private float Length(float[] v) => (float)Math.Sqrt(v.Select(x => x * x).Sum());
 
         private float[] Normalize(float[] v)
@@ -126,9 +124,9 @@ namespace ArcFaceNuget
             return v.Select(x => x / len).ToArray();
         }
 
-        private float Distance(float[] v1, float[] v2) => Length(v1.Zip(v2).Select(p => p.First - p.Second).ToArray());
+        public float Distance(float[] v1, float[] v2) => Length(v1.Zip(v2).Select(p => p.First - p.Second).ToArray());
 
-        private float Similarity(float[] v1, float[] v2) => v1.Zip(v2).Select(p => p.First * p.Second).Sum();
+        public float Similarity(float[] v1, float[] v2) => v1.Zip(v2).Select(p => p.First * p.Second).Sum();
 
         private DenseTensor<float> ImageToTensor(Image<Rgb24> img)
         {
