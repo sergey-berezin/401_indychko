@@ -8,7 +8,7 @@
 		<PackageId>ArcFaceNuget</PackageId>
 		<Authors>Olesya Indychko</Authors>
 		<Company>CMC MSU</Company>
-		<Version>1.0.0</Version>
+		<Version>1.0.1</Version>
 		<Description>Package provides API for calculating distance and similarity of two images using NN ArcFace.</Description>
 	</PropertyGroup>
 
