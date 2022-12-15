@@ -90,7 +90,8 @@ namespace WPFArcFaceApi.Controllers
 
             var result = database.Faces.Select(img => img.Id).ToList();
 
-            _logger.LogInformation($"GetImagesList result: {result}");
+            _logger.LogInformation($"GetImagesList result contains {result.Count} " +
+                $"images with IDs: {String.Join(' ', result.Select(id => id.ToString()).ToArray())}");
 
             return Ok(result);
         }
@@ -114,7 +115,8 @@ namespace WPFArcFaceApi.Controllers
 
             if (result != null)
             {
-                _logger.LogInformation($"GetImageInfo result: {result}");
+                _logger.LogInformation($"For image with id = {id} " +
+                    $"find embedding: {result.Embedding[..10]}...");
 
                 return Ok(result);
             }
