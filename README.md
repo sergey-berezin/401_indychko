@@ -64,3 +64,46 @@ Task<(float[,], float[,])> GetDistanceAndSimilarity(Image<Rgb24>[] images, Cance
 
 ### Пример работы приложения
 ![WPF with DB example](https://i.postimg.cc/Y283SWgG/image.png)
+
+# Лабораторная работа №4
+
+### Выставленное API для работы с базой данных и использования нейросети ArcFace.
+![WPF Web Api](https://i.postimg.cc/J7j77yqC/api.jpg)
+
+### Пример логирования сервера действий пользователя
+```
+info: WPFArcFaceApi.Controllers.ArcFaceController[0]
+      User gets all images ids from database.
+info: WPFArcFaceApi.Controllers.ArcFaceController[0]
+      GetImagesList result contains 2 images with IDs: 13 14
+info: WPFArcFaceApi.Controllers.ArcFaceController[0]
+      User gets image info by id = 13 from database.
+info: WPFArcFaceApi.Controllers.ArcFaceController[0]
+      For image with id = 13 find embedding: -0,0183235...
+info: WPFArcFaceApi.Controllers.ArcFaceController[0]
+      User gets image info by id = 14 from database.
+info: WPFArcFaceApi.Controllers.ArcFaceController[0]
+      For image with id = 14 find embedding: -0,0471677...
+info: WPFArcFaceApi.Controllers.ArcFaceController[0]
+      User adds image with title 'face1.png' to database.
+info: WPFArcFaceApi.Controllers.ArcFaceController[0]
+      Image with title 'face1.png' is already in database with id = 14
+info: WPFArcFaceApi.Controllers.ArcFaceController[0]
+      User gets image info by id = 14 from database.
+info: WPFArcFaceApi.Controllers.ArcFaceController[0]
+      For image with id = 14 find embedding: -0,0471677...
+info: WPFArcFaceApi.Controllers.ArcFaceController[0]
+      User adds image with title 'face3.jpeg' to database.
+info: WPFArcFaceApi.Controllers.ArcFaceController[0]
+      Image with title 'face3.jpeg' was added to database (id = 15)
+info: WPFArcFaceApi.Controllers.ArcFaceController[0]
+      User gets image info by id = 15 from database.
+info: WPFArcFaceApi.Controllers.ArcFaceController[0]
+      For image with id = 15 find embedding: -0,0020563...
+info: WPFArcFaceApi.Controllers.ArcFaceController[0]
+      User deletes all images from database.
+info: WPFArcFaceApi.Controllers.ArcFaceController[0]
+      User gets all images ids from database.
+info: WPFArcFaceApi.Controllers.ArcFaceController[0]
+      GetImagesList result contains 0 images with IDs:
+```
