@@ -142,3 +142,7 @@ _NCrunch*
 /TestNugetPackage/.vs/ProjectEvaluation
 /WpfArcFace/WpfArcFace/.vs
 /.vs
+/ArcFaceNuget/.vs/ArcFaceNuget/
+/WpfArcFace/WPFArcFaceApi/images.db-wal
+/WpfArcFace/WPFArcFaceApi/images.db-shm
+/WpfArcFace/WPFArcFaceApi/images.db

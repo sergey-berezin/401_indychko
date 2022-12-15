@@ -4,17 +4,14 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using ArcFaceNuget;
-using Ookii.Dialogs.Wpf;
 using System.IO;
 using SixLabors.ImageSharp.PixelFormats;
 using System.Threading;
 using ImageControl = System.Windows.Controls.Image;
 using Image = SixLabors.ImageSharp.Image;
-using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp;
 using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.Text;
+using WPFArcFaceApi.DTO;
+
 
 
 namespace WpfArcFace
@@ -26,60 +23,13 @@ namespace WpfArcFace
     {
         #region Private variables
 
+        private Service service = new();
+
         private readonly Component arcFaceComponent = new();
 
         private CancellationTokenSource cts = new();
 
-        private readonly VistaFolderBrowserDialog folderDialog = new();
-
-        private readonly TaskDialog taskDialog = new()
-        {
-            Buttons =
-            {
-                new TaskDialogButton("Yes"),
-                new TaskDialogButton("No")
-            },
-            WindowTitle = "Folder select",
-            Content = "Do you want to open this folder for second image too?",
-            MainIcon = TaskDialogIcon.Information
-        };
-
-        private readonly TaskDialog instructionDialog = new()
-        {
-            Buttons =
-            {
-                new TaskDialogButton("Let's go!")
-            },
-            WindowTitle = "How does this work?",
-            Content = "1. Select folder with your images by clicking on 📁 button\n" +
-                      "2. Select fisrt and secong images to compare\n" +
-                      "3. Press Analyse Images button\n\n" +
-                      "Voilà!🙂",
-            MainIcon = TaskDialogIcon.Information
-        };
-
-        private readonly TaskDialog cancellationDialog = new()
-        {
-            Buttons =
-            {
-                new TaskDialogButton("OK")
-            },
-            WindowTitle = "Cancellation",
-            Content = "Calculations were stopped by user.",
-            MainIcon = TaskDialogIcon.Warning
-        };
-
-        private readonly TaskDialog errorDialog = new()
-        {
-            Buttons =
-            {
-                new TaskDialogButton("OK")
-            },
-            WindowTitle = "Error while deleting image",
-            Content = "Image to delete was not selected. " +
-            "Please, select the image from list \"Images in database\" first.",
-            MainIcon = TaskDialogIcon.Error
-        };
+       
 
         private string firstFolderPath = "";
 
@@ -89,12 +39,12 @@ namespace WpfArcFace
         public MainWindow()
         {
             InitializeComponent();
-            InitializeImageInDataBaseList();
+            FillImageInDataBaseList();
         }
 
         public void OpenInstructionDialog(object sender, RoutedEventArgs e)
         {
-            instructionDialog.Show();
+            Dialogues.instructionDialog.Show();
         }
 
 
@@ -103,12 +53,17 @@ namespace WpfArcFace
             Button source = (Button)e.Source;
             if (source.Name == "FirstDialogButton")
             {
-                folderDialog.ShowDialog();
-                firstFolderPath = folderDialog.SelectedPath;
+                Dialogues.folderDialog.ShowDialog();
+                firstFolderPath = Dialogues.folderDialog.SelectedPath;
+                if (String.IsNullOrEmpty(firstFolderPath))
+                {
+                    Dialogues.emptyPathErrorDialog.Show();
+                    return;
+                }
                 FirstPathTextBlock.Text = firstFolderPath.Split('\\').Last();
                 FillImageListFromFolder(firstFolderPath, FirstImageList);
                 // ask if user wants to open this folder for second image
-                var pressedButton = taskDialog.Show();
+                var pressedButton = Dialogues.taskDialog.Show();
                 if (pressedButton?.Text == "Yes")
                 {
                     secondFolderPath = firstFolderPath;
@@ -118,8 +73,13 @@ namespace WpfArcFace
             }
             else if (source.Name == "SecondDialogButton")
             {
-                folderDialog.ShowDialog();
-                secondFolderPath = folderDialog.SelectedPath;
+                Dialogues.folderDialog.ShowDialog();
+                secondFolderPath = Dialogues.folderDialog.SelectedPath;
+                if (String.IsNullOrEmpty(secondFolderPath))
+                {
+                    Dialogues.emptyPathErrorDialog.Show();
+                    return;
+                }
                 SecondPathTextBlock.Text = secondFolderPath.Split('\\').Last();
                 FillImageListFromFolder(secondFolderPath, SecondImageList);
             }
@@ -127,7 +87,6 @@ namespace WpfArcFace
             {
                 throw new Exception("Unexpected call for folder dialog");
             }
-
         }
 
         public async void AnalyseImages(object sender, RoutedEventArgs e)
@@ -157,108 +116,68 @@ namespace WpfArcFace
                 using var img = Image.Load<Rgb24>(path);
                 // load image as bytes array
                 byte[] bytes = File.ReadAllBytes(path);
-                // get hash code of image in bytes
-                string hash = GetHashCode(bytes);
 
-                using (var database = new ImageDataBase())
+                string message = string.Empty;
+
+                cts = new CancellationTokenSource();
+
+                ProgressBar.Value += 100 / (3 * paths.Length);
+
+                if (cts.IsCancellationRequested) return;
+
+                // get image ID in database
+                var id = await service.GetImageId(bytes, path.Split('\\').Last(), cts.Token);
+
+                ProgressBar.Value += 100 / (3 * paths.Length);
+
+                if (cts.IsCancellationRequested) return;
+
+                // get info about image from Db by ID
+                var imageFromDb = await service.GetImageInfoById(id, cts.Token);
+
+                if (imageFromDb != null)
                 {
-                    // try find image from DB
-                    var imgFromDb = database.Faces.Where(item => item.Hash == hash)
-                                                        .Where(item => Enumerable.SequenceEqual(item.Image, bytes))
-                                                        .SingleOrDefault();
-                    // if image is already in database - load its embedding
-                    if (imgFromDb != null)
-                    {
-                        embeddings.Add(GetEmbeddingFromString(imgFromDb.Embedding));
-                        ProgressBar.Value += 100 / paths.Length;
-                    }
-                    // else - get embedding from arcFaceNuget
-                    else
-                    {
-                        img.Mutate(x => x.Resize(112, 112));
-
-                        cts = new CancellationTokenSource();
-                        Progress<int> progress = new();
-
-                        Thread.Sleep(1000);
-                        // using arcFaceNugetPackage
-                        var results = await arcFaceComponent.GetDistanceAndSimilarity(
-                            new Image<Rgb24>[] { img }, cts.Token, progress);
-
-                        if (!cts.Token.IsCancellationRequested)
-                        {
-                            // add embedding to the list
-                            embeddings.Add(results.Item3.First());
-
-                            // add new image to DB
-                            var imgInDb = AddImageToDb(hash, bytes, path.Split('\\').Last(), results.Item3.First());
-
-                            // add image to listbox
-                            AddImageToImageInDataBaseList(imgInDb);
-
-                            ProgressBar.Value += 100 / paths.Length;
-                        }
-                    }
+                    embeddings.Add(GetEmbeddingFromString(imageFromDb.Embedding));
+                    AddImageToImageInDatabaseList(imageFromDb);
+                    ProgressBar.Value += 100 / (3 * paths.Length);
+                }
+                else
+                {
+                    Dialogues.noEmbeddingErrorDialog.Show();
+                    return;
                 }
             }
 
+            if (cts.IsCancellationRequested) return;
+
             var (distance, similarity) = GetDistanceAndSimilarityFromEmbeddings(embeddings);
 
-            try
-            {
-                Similarity.Text = $"{similarity[0, 1]}";
-                Distance.Text = $"{distance[0, 1]}";
-            }
-            catch
-            {
-                Similarity.Text = "Not stated";
-                Distance.Text = "Not stated";
-                ProgressBar.Value = 0;
-            }
-            finally
-            {
-                // enable Analyse Button after computations end
-                AnalyseButton.IsEnabled = true;
-                CancellationButton.IsEnabled = false;
-            }
+            FillDistanceAndSimilarity(distance, similarity);
         }
 
         public void CancelCalculations(object sender, RoutedEventArgs e)
         {
             cts.Cancel();
-            cancellationDialog.Show();
+            Dialogues.cancellationDialog.Show();
             Similarity.Text = "Not stated";
             Distance.Text = "Not stated";
             ProgressBar.Value = 0;
+            AnalyseButton.IsEnabled = true;
+            CancellationButton.IsEnabled = false;
         }
 
-        public void DeleteImageFromDb(object sender, RoutedEventArgs e)
+        public async void DeleteImageFromDb(object sender, RoutedEventArgs e)
         {
-            var selectedItem = (StackPanel)DatabaseImageList.SelectedItem;
-
-            if (selectedItem == null)
+            if (await service.DeleteAllFromDatabase())
             {
-                errorDialog.Show();
+                Dialogues.cleanDatabaseSuccessDialog.Show();
             }
             else
             {
-                using var database = new ImageDataBase();
-                var deletingImage = database.Faces.Where(face =>
-                face.Title == selectedItem.Children.OfType<TextBlock>().Last().Text).FirstOrDefault();
-                if (deletingImage != null)
-                {
-                    // remove face from DB
-                    database.Faces.Remove(deletingImage);
-                    database.SaveChanges();
-                    // remove face from list
-                    DatabaseImageList.Items.Remove(selectedItem);
-                }
-                else
-                {
-                    errorDialog.Content = "Selected image was not find in database.";
-                    errorDialog.Show();
-                }
+                Dialogues.cleanDatabaseErrorDialog.Show();
             }
+
+            FillImageInDataBaseList();
         }
 
         #region Private methods
@@ -286,41 +205,6 @@ namespace WpfArcFace
             return (distanceMatrix, similarityMatrix);
         }
 
-        private static ImageInDb AddImageToDb(string hash, byte[] img, string title, float[] embedding)
-        {
-            using var database = new ImageDataBase();
-            ImageInDb image = new()
-            {
-                Hash = hash,
-                Image = img,
-                Title = title,
-                Embedding = GetStringFromEmbedding(embedding)
-            };
-            database.Add(image);
-            database.SaveChanges();
-            return image;
-        }
-
-        private static string GetHashCode(byte[] array)
-        {
-            // compute the hash
-            byte[] data = SHA256.Create().ComputeHash(array);
-
-            // Create a new Stringbuilder to collect the bytes
-            // and create a string.
-            var sBuilder = new StringBuilder();
-
-            // Loop through each byte of the hashed data
-            // and format each one as a hexadecimal string.
-            for (int i = 0; i < data.Length; i++)
-            {
-                sBuilder.Append(data[i].ToString("x2"));
-            }
-
-            // Return the hexadecimal string.
-            return sBuilder.ToString();
-        }
-
         private void ListSelectionChange(object? sender, SelectionChangedEventArgs e)
         {
             if (FirstImageList.SelectedItems.Count > 0 && SecondImageList.SelectedItems.Count > 0)
@@ -328,12 +212,6 @@ namespace WpfArcFace
                 AnalyseButton.IsEnabled = true;
             }
         }
-
-        private void ReportProgress(object? sender, int e)
-        {
-            ProgressBar.Value = e;
-        }
-
 
         private static void FillImageListFromFolder(string path, ListBox list)
         {
@@ -369,38 +247,34 @@ namespace WpfArcFace
             }
         }
 
-        private void InitializeImageInDataBaseList()
+        private async void FillImageInDataBaseList()
         {
-            using var database = new ImageDataBase();
-            foreach (var face in database.Faces)
-            {
-                // create new image element
-                ImageControl image = new()
-                {
-                    Source = ToBitmapImage(face.Image),
-                    Width = 60
-                };
+            DatabaseImageList.Items.Clear();
 
-                // create textBlock element with image name
-                TextBlock textBlock = new()
+            // get all IDs from Db
+            var ids = await service.GetAllImagesIdsFromDatabase();
+
+            if (ids == null) return;
+
+            foreach (var id in ids)
+            {
+                // get info about image from Db by ID
+                var imageFromDb = await service.GetImageInfoById(id, new CancellationToken());
+
+                if (imageFromDb == null)
                 {
-                    Text = face.Title,
-                    Padding = new Thickness(10, 25, 0, 0)
-                };
-                // create new stackpanel
-                StackPanel panel = new()
-                {
-                    Orientation = Orientation.Horizontal
-                };
-                panel.Children.Add(image);
-                panel.Children.Add(textBlock);
-                // add stackpanel to list
-                DatabaseImageList.Items.Add(panel);
+                    Dialogues.noEmbeddingErrorDialog.Show();
+                    continue;
+                }
+
+                AddImageToImageInDatabaseList(imageFromDb);
             }
         }
 
-        private void AddImageToImageInDataBaseList(ImageInDb face)
+        private void AddImageToImageInDatabaseList(ImageInDb face)
         {
+            if (CheckIsImageInImageInDatabaseList(face.Id)) return;
+
             // create new image element
             ImageControl image = new()
             {
@@ -412,30 +286,69 @@ namespace WpfArcFace
             TextBlock textBlock = new()
             {
                 Text = face.Title,
-                Padding = new Thickness(10, 25, 0, 0)
+                Padding = new Thickness(10, 10, 0, 0)
             };
+
+            // create textBlock element with image ID
+            TextBlock textBlockId = new()
+            {
+                Text = $"id: {face.Id}",
+                Padding = new Thickness(10, 10, 0, 0)
+            };
+
+            // create new stackpanel for text
+            StackPanel textPanel = new()
+            {
+                Orientation = Orientation.Vertical
+            };
+
+            textPanel.Children.Add(textBlock);
+            textPanel.Children.Add(textBlockId);
+
             // create new stackpanel
             StackPanel panel = new()
             {
                 Orientation = Orientation.Horizontal
             };
             panel.Children.Add(image);
-            panel.Children.Add(textBlock);
+            panel.Children.Add(textPanel);
             // add stackpanel to list
             DatabaseImageList.Items.Add(panel);
         }
 
+        private bool CheckIsImageInImageInDatabaseList(int Id)
+        {
+            foreach (StackPanel stackPanel in DatabaseImageList.Items)
+            {
+                var imgId = GetImageIdFromStackPanel(stackPanel);
+                if (imgId == Id) return true;
+            }
+
+            return false;
+        }
+
+
+        private static int GetImageIdFromStackPanel(StackPanel panel)
+        {
+            var textPanel = panel.Children[1] as StackPanel;
+
+            var idString = (textPanel.Children[1] as TextBlock).Text;
+
+            return int.Parse(idString.Split(' ').Last());
+        }
+
         private static BitmapImage ToBitmapImage(byte[] array)
         {
-            using (var ms = new MemoryStream(array))
-            {
-                var image = new BitmapImage();
-                image.BeginInit();
-                image.CacheOption = BitmapCacheOption.OnLoad; // here
-                image.StreamSource = ms;
-                image.EndInit();
-                return image;
-            }
+            using var ms = new MemoryStream(array);
+
+            var image = new BitmapImage();
+
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad; 
+            image.StreamSource = ms;
+            image.EndInit();
+
+            return image;
         }
 
         private static float[] GetEmbeddingFromString(string emb)
@@ -445,10 +358,29 @@ namespace WpfArcFace
             return embedding.ToArray();
         }
 
-        private static string GetStringFromEmbedding(float[] emb)
+        private void FillDistanceAndSimilarity(float[,] distance, float[,] similarity)
         {
-            return string.Join(' ', emb);
+            try
+            {
+                Similarity.Text = $"{similarity[0, 1]}";
+                Distance.Text = $"{distance[0, 1]}";
+                ProgressBar.Value = 100;
+            }
+            catch
+            {
+                Similarity.Text = "Not stated";
+                Distance.Text = "Not stated";
+                ProgressBar.Value = 0;
+            }
+            finally
+            {
+                // enable Analyse Button after computations end
+                AnalyseButton.IsEnabled = true;
+                CancellationButton.IsEnabled = false;
+            }
         }
+
+
         #endregion
     }
 }

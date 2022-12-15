@@ -83,6 +83,25 @@ namespace ArcFaceNuget
         }
 
         /// <summary>
+        /// Method gets N images and calculates embeddings for them.
+        /// </summary>
+        /// <returns>
+        /// List of embeddings. 
+        /// </returns>
+        public async Task<List<float[]>> GetEmbeddings(Image<Rgb24>[] images)
+        {
+            List<float[]> embeddings = new();
+
+            foreach (var image in images)
+            {
+                // get new embegging
+                embeddings.Add(await GetEmbeddings(image, null));
+            }
+
+            return embeddings;
+        }
+
+        /// <summary>
         /// Dispose instance of NN (session).
         /// </summary>
         public void Dispose()
@@ -92,22 +111,23 @@ namespace ArcFaceNuget
 
         #region Private methods
 
-        private async Task<float[]> GetEmbeddings(Image<Rgb24> face, CancellationToken token)
+        private async Task<float[]> GetEmbeddings(Image<Rgb24> face, CancellationToken? token)
         {
+            var newToken =  token ?? new CancellationToken();
             return await Task<float[]>.Factory.StartNew(() =>
             {
-                CheckToken(token);
+                CheckToken(newToken);
 
                 var inputs = new List<NamedOnnxValue> { NamedOnnxValue.CreateFromTensor("data", ImageToTensor(face)) };
 
-                CheckToken(token);
+                CheckToken(newToken);
 
                 lock (session)
                 {
                     using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = session.Run(inputs);
                     return Normalize(results.First(v => v.Name == "fc1").AsEnumerable<float>().ToArray());
                 }
-            }, token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            }, newToken, TaskCreationOptions.LongRunning, TaskScheduler.Default);
         }
 
         private void CheckToken(CancellationToken token)
