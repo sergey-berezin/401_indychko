@@ -117,10 +117,10 @@
                 </Style>
             </ListBox.ItemContainerStyle>
         </ListBox>
-        <Button Grid.Column="1" Grid.Row="3" Content="&#128465;" FontSize="22"
+        <Button Grid.Column="1" Grid.Row="3" Content="&#128465;  Clean database" FontSize="12"
                 HorizontalAlignment="Right"
                 Name="DeleteImageFromDbButton"
-                Width="35" Height="35" Background="LavenderBlush"
+                Width="115" Height="35" Background="LavenderBlush"
                 Click="DeleteImageFromDb" Margin="0,0,10,0" />
     </Grid>
 </Window>
