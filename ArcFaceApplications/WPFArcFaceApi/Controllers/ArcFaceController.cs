@@ -27,7 +27,7 @@ namespace WPFArcFaceApi.Controllers
 
         /// <summary>
         /// Counts embedding for image and adds info about image in database, 
-        /// if it does not already exists.
+        /// if it does not already exists. Method works for WPF application.
         /// </summary>
         /// <returns>
         /// ID (int) of image in database.
@@ -40,7 +40,7 @@ namespace WPFArcFaceApi.Controllers
             var title = imageData.Title;
             var bytes = imageData.Image;
 
-            if ((imageData.Image is null) || string.IsNullOrEmpty(title))
+            if ((imageData.Image is null) || (imageData.Image.Length == 0) || string.IsNullOrEmpty(title))
             {
                 _logger.LogError("User request is wrong: image or title are null");
 
@@ -73,6 +73,56 @@ namespace WPFArcFaceApi.Controllers
                 return Ok(imageFromDb.Id);
             }
         }
+
+        /// <summary>
+        /// Counts embedding for image and adds info about image in database, 
+        /// if it does not already exists. Method works for Angular Web application.
+        /// </summary>
+        /// <returns>
+        /// ID (int) of image in database.
+        /// </returns>
+        [HttpPost("images/add")]
+        [ProducesResponseType(typeof(int), 200)]
+        [ProducesResponseType(400)]
+        public async Task<ActionResult> AddImageByString([FromBody, Required] SaveImageByStringToDbRequest imageData)
+        {
+            var title = imageData.Title;
+            var bytes = Convert.FromBase64String(imageData.Image);
+
+            if ((imageData.Image is null) || (imageData.Image.Length == 0) || string.IsNullOrEmpty(title))
+            {
+                _logger.LogError("User request is wrong: image or title are null");
+
+                return BadRequest();
+            }
+
+            _logger.LogInformation($"User adds image with title '{title}' to database.");
+
+            // check if image exists in database
+            var imageFromDb = FindImageInDatabase(bytes);
+
+            if (imageFromDb == null)
+            {
+                // if image does not exist in Db => count embeddings
+                var embedding = await CountImageEmbedding(bytes);
+
+                // save image to database
+                var newImageId = SaveImageToDatabase(bytes, title, embedding);
+
+                _logger.LogInformation($"Image with title '{title}' was added to " +
+                                       $"database (id = {newImageId})");
+
+                return Ok(newImageId);
+            }
+            else
+            {
+                // if image is already in Db => return its ID
+                _logger.LogInformation($"Image with title '{title}' is already in " +
+                                       $"database with id = {imageFromDb.Id}");
+                return Ok(imageFromDb.Id);
+            }
+        }
+
 
         /// <summary>
         /// Gets all images from database.

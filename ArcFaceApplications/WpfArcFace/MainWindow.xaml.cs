@@ -10,9 +10,7 @@ using System.Threading;
 using ImageControl = System.Windows.Controls.Image;
 using Image = SixLabors.ImageSharp.Image;
 using System.Collections.Generic;
-using WPFArcFaceApi.DTO;
-
-
+using WPFArcFaceApi;
 
 namespace WpfArcFace
 {

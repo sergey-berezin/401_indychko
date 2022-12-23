@@ -146,3 +146,5 @@ _NCrunch*
 /WpfArcFace/WPFArcFaceApi/images.db-wal
 /WpfArcFace/WPFArcFaceApi/images.db-shm
 /WpfArcFace/WPFArcFaceApi/images.db
+/ArcFaceApplications/WpfArcFace/.vs
+/ArcFaceApplications/ArcFaceWebUI/ClientApp/.angular/cache/14.0.3
