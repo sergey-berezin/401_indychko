@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<body>
+  <h1 style="background-color: lavenderblush; text-align: center; font-family: Elephant; border: 2px solid black">
+    Faces analysis using ArcFace neural network
+  </h1>
+  <br />
+  <h2>Get distance and similarity between two images</h2>
+
+  <div class="row">
+    <div class="column">
+
+      <input type="file"
+             multiple
+             accept="image/*"
+             #folderPickerForList1
+             (change)="processSelectedImages(folderPickerForList1.files)" />
+
+
+      <mat-selection-list #folderImgs >
+        <mat-list-option checkboxPosition="before"
+                         *ngFor="let image of imagesFromFolder"
+                         style="margin: 10px 0px 10px 0px"
+                         [value]="image">
+          <img src="{{image.Image}}" height="60"/>
+          <span style="position: relative; bottom: 30px; right: 10px; left: 10px; line - height: 1px;">
+          {{image.Title}}
+          </span>
+        </mat-list-option>
+      </mat-selection-list>
+
+
+    </div>
+    <div class="column">
+      <button id="analyseButton"
+              (click)="analyseImages()">
+        Проанализировать изображения
+      </button>
+      <div class="loader" *ngIf="loadingResults"></div>
+      <div id="errorDiv" style="color: mediumvioletred"></div>
+      <h3 *ngIf="displayResults">Distance/Similarity Results</h3>
+      <div *ngIf="displayResults" id="results"> </div>
+    </div>
+  </div>
+  <br/> <br/>
+  <mat-divider></mat-divider>
+  <h2>Images stored in database</h2>
+  <button disabled id="deleteAllButton"
+          (click)="deleteAllFromDb()">
+    Удалить все файлы
+  </button>
+  &nbsp;&nbsp;&nbsp;
+  <input type="file"
+         multiple
+         accept="image/*"
+         #folderPickerForList2
+         (change)="saveImageToDatabase(folderPickerForList2.files)" />
+
+  <div id="list2" #list2>
+  </div>
+  <div class="loader" *ngIf="loadingImagesFromDb"></div>
+
+</body>
+</html>

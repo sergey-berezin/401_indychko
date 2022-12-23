@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using WPFArcFaceApi.DTO;
 
 namespace WPFArcFaceApi
 {
